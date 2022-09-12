@@ -1,0 +1,78 @@
+import sys
+import csv
+import time
+
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.common.by import By
+from selenium import webdriver
+# from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.chrome.options import Options
+from fake_useragent import UserAgent
+
+with open('./property_scrape_results.csv', 'a+') as f:
+
+  writer = csv.writer(f)
+
+  while True:
+    try:
+      print('Please paste the link to the property here:')
+      url = input()
+
+      # url = sys.argv[1]
+
+      # Fake user agent to throw captcha off
+      options = Options()
+      ua = UserAgent()
+      userAgent = ua.random
+      print(userAgent)
+      options.add_argument(f'user-agent={userAgent}')
+
+      service = Service(executable_path="/Users/tristonpang/chromedriver")
+      driver = webdriver.Chrome(service=service)
+
+      while True:
+        try:
+          driver.get(url)
+          break
+        except:
+          continue
+
+      property_name = driver.find_element(By.TAG_NAME, 'h1')
+      print(property_name.text)
+      if property_name.text == 'Hi! We just want to make sure you are a human':
+        print('Uh oh, CAPTCHA activated, sleeping for 5 seconds...')
+        driver.close()
+        time.sleep(5)
+        continue
+      
+      
+      area = driver.find_element(By.XPATH, '//*[@id="details"]/div/div[1]/table/tbody[2]/tr/td[2]')
+      print(area.text)
+
+      agent_name = None
+      try:
+        agent_name = driver.find_element(By.XPATH, '//*[@id="contact-form-side"]/form/div/div/div/div[1]/div[2]/div[1]/a')
+      except:
+        agent_name = driver.find_element(By.XPATH, '//*[@id="contact-form-side"]/form/div/div/div/div[1]/div[2]/div[1]')
+      
+      print(agent_name.text)
+
+      agent_number = driver.find_element(By.XPATH, '/html/body/div[2]/div/div[1]/section/div/div[5]/div/div/div/aside/div/div[2]/form/div/div/div/div[2]/div/a[1]/span[2]')
+      print(agent_number.text)
+      price = driver.find_element(By.CLASS_NAME, 'price')
+      print(price.text)
+      layout = driver.find_element(By.XPATH, '//*[@id="details"]/div/div[1]/table/tbody[1]/tr/td[2]')
+      print(layout.text)
+      floor_range = driver.find_element(By.XPATH, '//*[@id="details"]/div/div[1]/table/tbody[7]/tr/td[2]')
+      print(floor_range.text)
+
+      writer.writerow([property_name.text, url, agent_name.text, agent_number.text, price.text, layout.text, area.text, floor_range.text])
+
+
+      driver.close()
+
+      print('Sleeping for 2 seconds to avoid CAPTCHA...')
+      time.sleep(2) # Wait 2 seconds to throw captcha off
+    except KeyboardInterrupt:
+      print('\nExiting...')
+      exit()
